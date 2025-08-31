@@ -164,6 +164,19 @@ st.dataframe(
     use_container_width=True
 )
 
+st.subheader("🧾 Generate Receipt")
+
+for i, row in filtered_df.iterrows():
+    with st.expander(f"Receipt for {row['Client Name']} on {row['Date'].date()}"):
+        if st.button(f"Generate PDF", key=f"receipt_{i}"):
+            pdf_buffer = generate_receipt_pdf(row)
+            st.download_button(
+                label="📥 Download Receipt",
+                data=pdf_buffer,
+                file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
+                mime="application/pdf"
+            )
+
 # -------------------- Export --------------------
 st.download_button(
     label="📥 Download Filtered Data as CSV",
@@ -252,4 +265,35 @@ if not graph_df.empty:
             st.info("No expense data to display yet.")
 else:
     st.info("No data yet. Add transactions to see analytics and charts.")
+
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+import io
+
+def generate_receipt_pdf(row):
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    # Header
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, height - 50, "Surokkha Vet Clinics")
+    c.setFont("Helvetica", 12)
+    c.drawString(50, height - 70, "Income & Expense Receipt")
+
+    # Transaction Details
+    y = height - 120
+    for label in ["Date", "Client Name", "Phone Number", "Duty Doctor", "Category", "Type", "Amount", "Payment Method", "Details"]:
+        value = str(row.get(label, ""))
+        c.drawString(50, y, f"{label}: {value}")
+        y -= 20
+
+    # Footer
+    c.drawString(50, y - 20, "Thank you for choosing Surokkha Vet Clinics!")
+    c.showPage()
+    c.save()
+
+    buffer.seek(0)
+    return buffer
+
 

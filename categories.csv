@@ -1,0 +1,16 @@
+Category,Type
+Patient visit,Income
+Follow-up patient visit,Income
+Vaccination,Income
+Deworming,Income
+Medicine,Income
+Patient visit + Medicine,Income
+Surgery,Income
+Laboratory test,Income
+Salary,Expense
+Snacks,Expense
+Infrastructure,Expense
+Medicine stock,Expense
+Vaccine stock,Expense
+Lunch offer,Expense
+Advertisement cost,Expense

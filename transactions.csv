@@ -1,0 +1,5 @@
+Date,Category,Type,Amount,Payment Method,Client Name,Phone Number,Duty Doctor,Details
+2025-08-31,Patient visit,Income,500.0,Cash,Mr. Rahim,1767040023,Dr. Zakiul Hasan,
+2025-08-19,Patient visit + Medicine,Income,1000.0,Cash,Mr. Karim,1767040023,Dr. Zakiul Hasan,Full paid
+2025-08-23,Surgery,Income,2500.0,Cash,Mr. Karim,1767040023,Dr. Zakiul Hasan,Spay
+2025-08-06,Vaccine stock,Expense,5000.0,Cash,Mr. Hasan,01856142453,Dr. Sunom,Square

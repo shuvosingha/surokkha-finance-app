@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 # -------------------- Configuration --------------------
 st.set_page_config(page_title="Surokkha Vet Clinics", layout="wide")
-LOGO_PATH = r"D:\Pet clinic plan\Printing\Logos\Logo\Final PNG.png"
+LOGO_PATH = r"logo.png"
 DATA_FILE = "transactions.csv"
 CATEGORY_FILE = "categories.csv"
 
@@ -252,3 +252,4 @@ if not graph_df.empty:
             st.info("No expense data to display yet.")
 else:
     st.info("No data yet. Add transactions to see analytics and charts.")
+

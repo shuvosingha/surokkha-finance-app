@@ -2,3 +2,6 @@ streamlit
 pandas
 plotly
 reportlab
+qrcode
+pillow
+

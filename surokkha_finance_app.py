@@ -268,12 +268,13 @@ def generate_receipt_pdf(row):
     width, height = A4
 
     # Colors
-    header_color = colors.HexColor("#1A73E8")  # Google blue
-    accent_color = colors.HexColor("#0B6E4F")  # Deep green
+    header_color = colors.HexColor("#1A73E8")
+    accent_color = colors.HexColor("#0B6E4F")
+    line_y = height - 140
 
     # Logo
     try:
-        logo = ImageReader("logo.png")  # Ensure logo.png is in your repo
+        logo = ImageReader("logo.png")
         c.drawImage(logo, 30, height - 100, width=60*mm, preserveAspectRatio=True, mask='auto')
     except:
         c.setFont("Helvetica-Bold", 14)
@@ -292,20 +293,57 @@ def generate_receipt_pdf(row):
     c.drawString(120, height - 110, "🌐 www.surokkhavetclinics.com")
     c.drawString(120, height - 125, "📍 Mohammadia Super Market (1st Floor), Sobhanbag, Mirpur Road, Dhaka - 1207")
 
-    # Title
+    # Receipt Title
     c.setFont("Helvetica-Bold", 14)
     c.setFillColor(accent_color)
     c.drawCentredString(width / 2, height - 160, "Income & Expense Receipt")
 
-    # Transaction Details
-    c.setFont("Helvetica", 11)
-    c.setFillColor(colors.black)
-    y = height - 190
-    for label in ["Date", "Client Name", "Phone Number", "Duty Doctor", "Category", "Type", "Amount", "Payment Method", "Details"]:
-        value = str(row.get(label, ""))
-        c.drawString(50, y, f"{label}:")
-        c.drawString(180, y, value)
-        y -= 20
+    # Billed To
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(50, line_y, "Billed To:")
+    c.setFont("Helvetica", 10)
+    c.drawString(120, line_y, f"{row['Client Name']} | {row['Phone Number']}")
+    line_y -= 20
+    c.drawString(120, line_y, f"Duty Doctor: {row['Duty Doctor']}")
+    line_y -= 30
+
+    # Itemized Table
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(50, line_y, "Service")
+    c.drawString(250, line_y, "Unit Price")
+    c.drawString(350, line_y, "Quantity")
+    c.drawString(450, line_y, "Total")
+    line_y -= 15
+    c.line(50, line_y, 550, line_y)
+    line_y -= 20
+
+    # Single item (you can expand this to multiple later)
+    service = row["Category"]
+    unit_price = float(row["Amount"])
+    quantity = 1
+    total = unit_price * quantity
+
+    c.setFont("Helvetica", 10)
+    c.drawString(50, line_y, service)
+    c.drawString(250, line_y, f"৳ {unit_price:.2f}")
+    c.drawString(350, line_y, str(quantity))
+    c.drawString(450, line_y, f"৳ {total:.2f}")
+    line_y -= 30
+
+    # Totals
+    tax = round(total * 0.05, 2)
+    grand_total = total + tax
+
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(350, line_y, "Subtotal:")
+    c.drawString(450, line_y, f"৳ {total:.2f}")
+    line_y -= 15
+    c.drawString(350, line_y, "Tax (5%):")
+    c.drawString(450, line_y, f"৳ {tax:.2f}")
+    line_y -= 15
+    c.drawString(350, line_y, "Total:")
+    c.drawString(450, line_y, f"৳ {grand_total:.2f}")
+    line_y -= 30
 
     # QR Code
     qr = qrcode.make("https://www.surokkhavetclinics.com")
@@ -316,7 +354,7 @@ def generate_receipt_pdf(row):
     c.drawImage(qr_img, width - 120, 50, width=60, height=60)
 
     # Footer
-    c.setFont("Helvetica-Oblique", 10)
+    c.setFont("Helvetica-Oblique", 9)
     c.setFillColor(colors.black)
     c.drawString(50, 40, "Thank you for choosing Surokkha Vet Clinics.")
     c.drawString(50, 25, "This receipt was generated digitally and does not require a signature.")
@@ -338,6 +376,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

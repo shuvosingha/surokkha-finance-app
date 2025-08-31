@@ -256,31 +256,60 @@ else:
 
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
 import io
+import qrcode
 
 def generate_receipt_pdf(row):
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
-    # Header
+    # Logo
+    try:
+        logo = ImageReader("logo.png")  # Ensure logo.png is in your repo
+        c.drawImage(logo, 30, height - 100, width=60*mm, preserveAspectRatio=True, mask='auto')
+    except:
+        c.setFont("Helvetica-Bold", 14)
+        c.drawString(30, height - 80, "Surokkha Vet Clinics")
+
+    # Clinic Info
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(50, height - 50, "Surokkha Vet Clinics")
-    c.setFont("Helvetica", 12)
-    c.drawString(50, height - 70, "Income & Expense Receipt")
+    c.drawString(120, height - 60, "Surokkha Vet Clinics")
+    c.setFont("Helvetica", 10)
+    c.drawString(120, height - 80, "📞 +880-1711 77 08 27")
+    c.drawString(120, height - 95, "✉️ surokkhavetclinic@gmail.com")
+    c.drawString(120, height - 110, "🌐 www.surokkhavetclinics.com")
+    c.drawString(120, height - 125, "📍 Mohammadia Super Market (1st Floor), Sobhanbag, Mirpur Road, Dhaka - 1207")
+
+    # Title
+    c.setFont("Helvetica-Bold", 14)
+    c.drawCentredString(width / 2, height - 160, "Income & Expense Receipt")
 
     # Transaction Details
-    y = height - 120
+    c.setFont("Helvetica", 11)
+    y = height - 190
     for label in ["Date", "Client Name", "Phone Number", "Duty Doctor", "Category", "Type", "Amount", "Payment Method", "Details"]:
         value = str(row.get(label, ""))
         c.drawString(50, y, f"{label}: {value}")
-        y -= 20
+        y -= 18
+
+    # QR Code
+    qr = qrcode.make("https://www.surokkhavetclinics.com")
+    qr_buffer = io.BytesIO()
+    qr.save(qr_buffer, format='PNG')
+    qr_buffer.seek(0)
+    qr_img = ImageReader(qr_buffer)
+    c.drawImage(qr_img, width - 120, 50, width=60, height=60)
 
     # Footer
-    c.drawString(50, y - 20, "Thank you for choosing Surokkha Vet Clinics!")
+    c.setFont("Helvetica-Oblique", 10)
+    c.drawString(50, 40, "Thank you for choosing Surokkha Vet Clinics.")
+    c.drawString(50, 25, "This receipt was generated digitally and does not require a signature.")
+
     c.showPage()
     c.save()
-
     buffer.seek(0)
     return buffer
 
@@ -296,6 +325,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

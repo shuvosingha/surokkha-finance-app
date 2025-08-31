@@ -164,18 +164,6 @@ st.dataframe(
     use_container_width=True
 )
 
-st.subheader("🧾 Generate Receipt")
-
-for i, row in filtered_df.iterrows():
-    with st.expander(f"Receipt for {row['Client Name']} on {row['Date'].date()}"):
-        if st.button(f"Generate PDF", key=f"receipt_{i}"):
-            pdf_buffer = generate_receipt_pdf(row)
-            st.download_button(
-                label="📥 Download Receipt",
-                data=pdf_buffer,
-                file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
-                mime="application/pdf"
-            )
 
 # -------------------- Export --------------------
 st.download_button(
@@ -295,5 +283,19 @@ def generate_receipt_pdf(row):
 
     buffer.seek(0)
     return buffer
+
+st.subheader("🧾 Generate Receipt")
+
+for i, row in filtered_df.iterrows():
+    with st.expander(f"Receipt for {row['Client Name']} on {row['Date'].date()}"):
+        if st.button(f"Generate PDF", key=f"receipt_{i}"):
+            pdf_buffer = generate_receipt_pdf(row)
+            st.download_button(
+                label="📥 Download Receipt",
+                data=pdf_buffer,
+                file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
+                mime="application/pdf"
+            )
+
 
 

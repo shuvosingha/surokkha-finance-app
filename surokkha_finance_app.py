@@ -177,9 +177,14 @@ else:
 
             if st.button(f"🗑️ Delete Transaction", key=f"delete_{i}"):
                 df.drop(index=i, inplace=True)
-                df.to_csv("data.csv", index=False)  # Or update Google Sheet
+                df.to_csv("data.csv", index=False)  # Replace with Google Sheets sync if needed
+                st.session_state["deleted"] = True
                 st.success("✅ Transaction deleted.")
-                st.experimental_rerun()
+
+# -------------------- Safe Rerun After Deletion --------------------
+if st.session_state.get("deleted"):
+    st.session_state["deleted"] = False
+    st.experimental_rerun()
 
 # -------------------- Export --------------------
 st.download_button(
@@ -380,6 +385,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

@@ -161,16 +161,30 @@ if st.session_state.role in ["Admin", "Staff"]:
 
 # -------------------- Transactions Table --------------------
 st.subheader("📋 Transaction Records")
-st.dataframe(
-    (filtered_df.sort_values("Date", ascending=False) if not filtered_df.empty else filtered_df),
-    use_container_width=True
-)
 
+if filtered_df.empty:
+    st.info("No transactions match the current filters.")
+else:
+    for i, row in filtered_df.sort_values("Date", ascending=False).iterrows():
+        with st.expander(f"{row['Date'].date()} | {row['Client Name']} | ৳{row['Amount']}"):
+            st.write(f"**Category:** {row['Category']}")
+            st.write(f"**Type:** {row['Type']}")
+            st.write(f"**Payment Method:** {row['Payment Method']}")
+            st.write(f"**Phone:** {row['Phone Number']}")
+            st.write(f"**Address:** {row.get('Client Address', '')}")
+            st.write(f"**Doctor:** {row['Duty Doctor']}")
+            st.write(f"**Details:** {row['Details']}")
+
+            if st.button(f"🗑️ Delete Transaction", key=f"delete_{i}"):
+                df.drop(index=i, inplace=True)
+                df.to_csv("data.csv", index=False)  # Or update Google Sheet
+                st.success("✅ Transaction deleted.")
+                st.experimental_rerun()
 
 # -------------------- Export --------------------
 st.download_button(
     label="📥 Download Filtered Data as CSV",
-    data=(filtered_df.to_csv(index=False) if not filtered_df.empty else df.head(0).to_csv(index=False)).encode("utf-8"),
+    data=(filtered_df.to_csv(index=False)).encode("utf-8"),
     file_name="surokkha_transactions.csv",
     mime="text/csv"
 )
@@ -366,6 +380,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

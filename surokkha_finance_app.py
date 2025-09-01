@@ -330,7 +330,7 @@ def generate_receipt_pdf(row):
     y -= 30
 
     # Adjusted footer position
-    footer_y = 140
+    footer_y = 160
 
     # QR Code
     qr = qrcode.make("https://www.surokkhavetclinics.com")
@@ -340,11 +340,9 @@ def generate_receipt_pdf(row):
     qr_img = ImageReader(qr_buffer)
     c.drawImage(qr_img, width - 120, footer_y, width=60, height=60)
 
-    # Duty Doctor Signature Block
+    # Duty Doctor Name (moved higher, no signature line)
     c.setFont("Helvetica", 10)
-    c.drawString(width - 200, footer_y + 70, f"Duty Doctor: {row['Duty Doctor']}")
-    c.line(width - 200, footer_y + 65, width - 50, footer_y + 65)
-    c.drawString(width - 200, footer_y + 50, "Signature")
+    c.drawString(width - 200, footer_y + 100, f"Duty Doctor: {row['Duty Doctor']}")
 
     # Footer Note
     c.setFont("Helvetica-Oblique", 9)
@@ -368,6 +366,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

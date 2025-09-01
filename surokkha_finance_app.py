@@ -255,21 +255,21 @@ graph_df = graph_df.dropna(subset=["Date"])
 if not graph_df.empty:
     graph_df["Year"] = graph_df["Date"].dt.year
     graph_df["Month"] = graph_df["Date"].dt.month_name()
+    graph_df["MonthNum"] = graph_df["Date"].dt.month  # for sorting
 
     # Year filter
     selected_year = st.selectbox("Select Year", sorted(graph_df["Year"].unique(), reverse=True))
 
     # Month filter (optional)
     month_options = graph_df[graph_df["Year"] == selected_year]["Month"].unique().tolist()
-    selected_month = st.selectbox("Select Month (optional)", ["All"] + sorted(month_options))
+    selected_month = st.selectbox("Select Month (optional)", ["All"] + sorted(month_options, key=lambda m: graph_df[graph_df["Month"] == m]["MonthNum"].iloc[0]))
 
     # Apply filters
     filtered_graph_df = graph_df[graph_df["Year"] == selected_year]
     if selected_month != "All":
         filtered_graph_df = filtered_graph_df[filtered_graph_df["Month"] == selected_month]
 
-
-with st.container():
+    # Income Graph
     inc = filtered_graph_df[filtered_graph_df["Type"] == "Income"]
     if not inc.empty:
         fig_income = px.bar(
@@ -284,8 +284,7 @@ with st.container():
     else:
         st.info("No income data for selected period.")
 
-
-with st.container():
+    # Expense Graph
     exp = filtered_graph_df[filtered_graph_df["Type"] == "Expense"]
     if not exp.empty:
         fig_expense = px.bar(
@@ -300,8 +299,7 @@ with st.container():
     else:
         st.info("No expense data for selected period.")
 
-
-with st.container():
+    # Transaction Count Graph
     count_df = filtered_graph_df.groupby(["Date", "Type"]).size().reset_index(name="Count")
     if not count_df.empty:
         fig_count = px.bar(
@@ -315,6 +313,8 @@ with st.container():
         st.plotly_chart(fig_count, width="stretch")
     else:
         st.info("No transaction count data for selected period.")
+else:
+    st.info("No data yet. Add transactions to see analytics and charts.")
 
 
 
@@ -430,6 +430,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

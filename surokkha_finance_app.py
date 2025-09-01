@@ -159,13 +159,25 @@ if st.session_state.role in ["Admin", "Staff"]:
                 save_data(df)
                 st.success("✅ Transaction added!")
 
-# -------------------- Transactions Table --------------------
+# -------------------- Transactions Table with Multi-Select --------------------
 st.subheader("📋 Transaction Records")
 
 if filtered_df.empty:
     st.info("No transactions match the current filters.")
 else:
-    for i, row in filtered_df.sort_values("Date", ascending=False).iterrows():
+    # Sort and reset index for safe referencing
+    filtered_df_sorted = filtered_df.sort_values("Date", ascending=False).reset_index()
+
+    # Multi-select dropdown
+    selected_rows = st.multiselect(
+        "Select transactions to delete:",
+        options=filtered_df_sorted.index,
+        format_func=lambda i: f"{filtered_df_sorted.loc[i, 'Date'].date()} | {filtered_df_sorted.loc[i, 'Client Name']} | ৳{filtered_df_sorted.loc[i, 'Amount']}"
+    )
+
+    # Show details for selected transactions
+    for i in selected_rows:
+        row = filtered_df_sorted.loc[i]
         with st.expander(f"{row['Date'].date()} | {row['Client Name']} | ৳{row['Amount']}"):
             st.write(f"**Category:** {row['Category']}")
             st.write(f"**Type:** {row['Type']}")
@@ -175,18 +187,19 @@ else:
             st.write(f"**Doctor:** {row['Duty Doctor']}")
             st.write(f"**Details:** {row['Details']}")
 
-            if st.button(f"🗑️ Delete Transaction", key=f"delete_{i}"):
-                df.drop(index=i, inplace=True)
-                df.to_csv("data.csv", index=False)  # Replace with Google Sheets sync if needed
-                st.session_state["deleted"] = True
-                st.success("✅ Transaction deleted.")
+    # Delete button
+    if selected_rows and st.button("🗑️ Delete Selected Transactions"):
+        df.drop(index=filtered_df_sorted.loc[selected_rows, "index"], inplace=True)
+        df.to_csv("data.csv", index=False)  # Replace with Google Sheets sync if needed
+        st.session_state["deleted_flag"] = True
+        st.success(f"✅ Deleted {len(selected_rows)} transaction(s).")
 
 # -------------------- Safe Rerun After Deletion --------------------
-if st.session_state.get("deleted"):
-    st.session_state["deleted"] = False
+if st.session_state.get("deleted_flag"):
+    st.session_state["deleted_flag"] = False
     st.experimental_rerun()
 
-# -------------------- Export --------------------
+# -------------------- Export Filtered Data --------------------
 st.download_button(
     label="📥 Download Filtered Data as CSV",
     data=(filtered_df.to_csv(index=False)).encode("utf-8"),
@@ -385,6 +398,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

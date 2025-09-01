@@ -101,22 +101,30 @@ if st.sidebar.button("Logout"):
     st.rerun()
 
 
-# -------------------- Transaction Entry --------------------
+
+import streamlit as st
+import pandas as pd
+from datetime import datetime
+
+def save_data(updated_df):
+    updated_df.to_csv("data.csv", index=False)
+
+# Load data once
+df = pd.read_csv("data.csv")
+
+
+# -------------------- Transection Entry --------------------
+
 if st.session_state.role in ["Admin", "Staff"]:
     st.subheader("➕ Add New Transaction")
     with st.form("transaction_form"):
         col1, col2, col3 = st.columns(3)
 
-        # Category options
         category_options = categories["Category"].unique().tolist() if not categories.empty else []
 
         with col1:
             date = st.date_input("Date", datetime.today())
-            if category_options:
-                category = st.selectbox("Category", category_options)
-            else:
-                st.info("No categories yet. Add in Category Manager below.")
-                category = st.text_input("Category")
+            category = st.selectbox("Category", category_options) if category_options else st.text_input("Category")
             trans_type = st.selectbox("Type", ["Income", "Expense"])
 
         with col2:
@@ -150,7 +158,9 @@ if st.session_state.role in ["Admin", "Staff"]:
                 df = pd.concat([df, new_row], ignore_index=True)
                 save_data(df)
                 st.success("✅ Transaction added!")
+                st.rerun()
 
+# -------------------- Apply Filter and Analytics --------------------
 
 # Apply filters
 filtered_df = df.copy()
@@ -161,20 +171,18 @@ if not filtered_df.empty:
         (filtered_df["Type"].isin(type_filter))
     ]
 
-# -------------------- Transactions Table with Multi-Select --------------------
+# Data Analytics
+last_7_days = df[df["Date"] >= pd.to_datetime(datetime.today()) - pd.Timedelta(days=7)]
+total_income = last_7_days[last_7_days["Type"] == "Income"]["Amount"].sum()
+total_expense = last_7_days[last_7_days["Type"] == "Expense"]["Amount"].sum()
+transaction_count = len(last_7_days)
 
-import streamlit as st
-import pandas as pd
+st.metric("Total Income (7 days)", f"৳{total_income:.2f}")
+st.metric("Total Expense (7 days)", f"৳{total_expense:.2f}")
+st.metric("Transactions (7 days)", transaction_count)
 
-# -------------------- Safe Rerun Callback --------------------
-def safe_rerun():
-    st.session_state["trigger_rerun"] = True
+# -------------------- Transection Viewer + Delete Logic --------------------
 
-# -------------------- Load Data --------------------
-df = pd.read_csv("data.csv")  # Replace with your actual data source
-filtered_df = df.copy()  # Apply filters if needed
-
-# -------------------- Transactions Table --------------------
 st.subheader("📋 Transaction Records")
 
 if filtered_df.empty:
@@ -193,25 +201,18 @@ else:
             st.write(f"**Details:** {row['Details']}")
 
             if st.button("🗑️ Delete This Transaction", key=f"delete_{i}"):
-                st.session_state["pending_deletion"] = i
-                st.success("✅ Transaction marked for deletion.")
-                safe_rerun()
+                df.drop(index=i, inplace=True)
+                save_data(df)
+                st.success("✅ Transaction deleted.")
+                st.rerun()
 
-# -------------------- Safe Deletion Execution --------------------
-if "pending_deletion" in st.session_state:
-    index_to_delete = st.session_state.pop("pending_deletion")
-    df.drop(index=index_to_delete, inplace=True)
-    df.to_csv("data.csv", index=False)
-    st.rerun()
-
-# -------------------- Export Filtered Data --------------------
+# -------------------- Export Button --------------------
 st.download_button(
     label="📥 Download Filtered Data as CSV",
     data=(filtered_df.to_csv(index=False)).encode("utf-8"),
     file_name="surokkha_transactions.csv",
     mime="text/csv"
 )
-
 
 
 # -------------------- Category Manager --------------------
@@ -405,6 +406,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

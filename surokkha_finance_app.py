@@ -189,14 +189,15 @@ else:
 
     # Delete button
     if selected_rows and st.button("🗑️ Delete Selected Transactions"):
-        df.drop(index=filtered_df_sorted.loc[selected_rows, "index"], inplace=True)
-        df.to_csv("data.csv", index=False)  # Replace with Google Sheets sync if needed
-        st.session_state["deleted_flag"] = True
-        st.success(f"✅ Deleted {len(selected_rows)} transaction(s).")
+        # Store deletion request in session_state
+        st.session_state["pending_deletion"] = filtered_df_sorted.loc[selected_rows, "index"].tolist()
+        st.success(f"✅ Marked {len(selected_rows)} transaction(s) for deletion.")
 
-# -------------------- Safe Rerun After Deletion --------------------
-if st.session_state.get("deleted_flag"):
-    st.session_state["deleted_flag"] = False
+# -------------------- Safe Deletion Execution --------------------
+if "pending_deletion" in st.session_state:
+    indices_to_delete = st.session_state.pop("pending_deletion")
+    df.drop(index=indices_to_delete, inplace=True)
+    df.to_csv("data.csv", index=False)  # Replace with Google Sheets sync if needed
     st.experimental_rerun()
 
 # -------------------- Export Filtered Data --------------------
@@ -398,6 +399,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

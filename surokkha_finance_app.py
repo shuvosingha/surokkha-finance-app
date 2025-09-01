@@ -1,4 +1,4 @@
-﻿import streamlit as st
+import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime, timedelta
@@ -100,31 +100,31 @@ if st.sidebar.button("Logout"):
     st.session_state.role = ""
     st.rerun()
 
+# Apply filters
+filtered_df = df.copy()
+if not filtered_df.empty:
+    filtered_df = filtered_df[
+        (filtered_df["Date"] >= pd.to_datetime(start_date)) &
+        (filtered_df["Date"] <= pd.to_datetime(end_date)) &
+        (filtered_df["Type"].isin(type_filter))
+    ]
 
-
-import streamlit as st
-import pandas as pd
-from datetime import datetime
-
-def save_data(updated_df):
-    updated_df.to_csv("data.csv", index=False)
-
-# Load data once
-df = pd.read_csv("data.csv")
-
-
-# -------------------- Transection Entry --------------------
-
+# -------------------- Transaction Entry --------------------
 if st.session_state.role in ["Admin", "Staff"]:
     st.subheader("➕ Add New Transaction")
     with st.form("transaction_form"):
         col1, col2, col3 = st.columns(3)
 
+        # Category options
         category_options = categories["Category"].unique().tolist() if not categories.empty else []
 
         with col1:
             date = st.date_input("Date", datetime.today())
-            category = st.selectbox("Category", category_options) if category_options else st.text_input("Category")
+            if category_options:
+                category = st.selectbox("Category", category_options)
+            else:
+                st.info("No categories yet. Add in Category Manager below.")
+                category = st.text_input("Category")
             trans_type = st.selectbox("Type", ["Income", "Expense"])
 
         with col2:
@@ -158,62 +158,22 @@ if st.session_state.role in ["Admin", "Staff"]:
                 df = pd.concat([df, new_row], ignore_index=True)
                 save_data(df)
                 st.success("✅ Transaction added!")
-                st.rerun()
 
-# -------------------- Apply Filter and Analytics --------------------
-
-# Apply filters
-filtered_df = df.copy()
-if not filtered_df.empty:
-    filtered_df = filtered_df[
-        (filtered_df["Date"] >= pd.to_datetime(start_date)) &
-        (filtered_df["Date"] <= pd.to_datetime(end_date)) &
-        (filtered_df["Type"].isin(type_filter))
-    ]
-
-# Data Analytics
-last_7_days = df[df["Date"] >= pd.to_datetime(datetime.today()) - pd.Timedelta(days=7)]
-total_income = last_7_days[last_7_days["Type"] == "Income"]["Amount"].sum()
-total_expense = last_7_days[last_7_days["Type"] == "Expense"]["Amount"].sum()
-transaction_count = len(last_7_days)
-
-st.metric("Total Income (7 days)", f"৳{total_income:.2f}")
-st.metric("Total Expense (7 days)", f"৳{total_expense:.2f}")
-st.metric("Transactions (7 days)", transaction_count)
-
-# -------------------- Transection Viewer + Delete Logic --------------------
-
+# -------------------- Transactions Table --------------------
 st.subheader("📋 Transaction Records")
+st.dataframe(
+    (filtered_df.sort_values("Date", ascending=False) if not filtered_df.empty else filtered_df),
+    use_container_width=True
+)
 
-if filtered_df.empty:
-    st.info("No transactions match the current filters.")
-else:
-    filtered_df_sorted = filtered_df.sort_values("Date", ascending=False)
 
-    for i, row in filtered_df_sorted.iterrows():
-        with st.expander(f"{row['Date']} | {row['Client Name']} | ৳{row['Amount']}"):
-            st.write(f"**Category:** {row['Category']}")
-            st.write(f"**Type:** {row['Type']}")
-            st.write(f"**Payment Method:** {row['Payment Method']}")
-            st.write(f"**Phone:** {row['Phone Number']}")
-            st.write(f"**Address:** {row.get('Client Address', '')}")
-            st.write(f"**Doctor:** {row['Duty Doctor']}")
-            st.write(f"**Details:** {row['Details']}")
-
-            if st.button("🗑️ Delete This Transaction", key=f"delete_{i}"):
-                df.drop(index=i, inplace=True)
-                save_data(df)
-                st.success("✅ Transaction deleted.")
-                st.rerun()
-
-# -------------------- Export Button --------------------
+# -------------------- Export --------------------
 st.download_button(
     label="📥 Download Filtered Data as CSV",
-    data=(filtered_df.to_csv(index=False)).encode("utf-8"),
+    data=(filtered_df.to_csv(index=False) if not filtered_df.empty else df.head(0).to_csv(index=False)).encode("utf-8"),
     file_name="surokkha_transactions.csv",
     mime="text/csv"
 )
-
 
 # -------------------- Category Manager --------------------
 if st.session_state.role == "Admin":
@@ -235,7 +195,7 @@ if st.session_state.role == "Admin":
                 )
                 save_categories(categories)
                 st.success(f"✅ Category '{new_cat}' added!")
-        st.dataframe(categories, width="stretch")
+        st.dataframe(categories, use_container_width=True)
 
 # -------------------- Analytics --------------------
 if st.session_state.role in ["Admin", "Staff"]:
@@ -279,7 +239,7 @@ if not graph_df.empty:
             title="Monthly Income", barmode="stack"
         ) if not inc.empty else None
         if fig_income:
-            st.plotly_chart(fig_income, width="stretch")
+            st.plotly_chart(fig_income, use_container_width=True)
         else:
             st.info("No income data to display yet.")
 
@@ -290,7 +250,7 @@ if not graph_df.empty:
             title="Monthly Expense", barmode="stack"
         ) if not exp.empty else None
         if fig_expense:
-            st.plotly_chart(fig_expense, width="stretch")
+            st.plotly_chart(fig_expense, use_container_width=True)
         else:
             st.info("No expense data to display yet.")
 else:
@@ -303,7 +263,6 @@ from reportlab.lib.utils import ImageReader
 from reportlab.lib import colors
 import io
 import qrcode
-from datetime import datetime
 
 def generate_receipt_pdf(row):
     buffer = io.BytesIO()
@@ -312,29 +271,25 @@ def generate_receipt_pdf(row):
 
     # Draw letter pad background
     try:
-        letterpad = ImageReader("letterpad.png")
+        letterpad = ImageReader("letterpad.png")  # Ensure this file is in your GitHub repo
         c.drawImage(letterpad, 0, 0, width=width, height=height)
     except:
         c.setFont("Helvetica-Bold", 14)
         c.drawString(50, height - 50, "Surokkha Vet Clinics")
 
     # Receipt Title
-    c.setFont("Helvetica-Bold", 16)
+    c.setFont("Helvetica-Bold", 14)
     c.setFillColor(colors.HexColor("#0B6E4F"))
-    c.drawCentredString(width / 2, height - 180, "Receipt")
-
-    # Current Time (upper right below title)
-    now = datetime.now().strftime("%Y-%m-%d %I:%M %p")
-    c.setFont("Helvetica", 10)
-    c.setFillColor(colors.black)
-    c.drawRightString(width - 50, height - 195, f"Time: {now}")
+    c.drawCentredString(width / 2, height - 180, "Income & Expense Receipt")
 
     # Billed To Section
     c.setFont("Helvetica-Bold", 11)
-    c.drawString(50, height - 220, "Billed To:")
+    c.setFillColor(colors.black)
+    c.drawString(50, height - 210, "Billed To:")
     c.setFont("Helvetica", 10)
-    c.drawString(120, height - 220, f"{row['Client Name']} | {row['Phone Number']}")
-    c.drawString(120, height - 235, f"Address: {row.get('Client Address', '')}")
+    c.drawString(120, height - 210, f"{row['Client Name']} | {row['Phone Number']}")
+    c.drawString(120, height - 225, f"Address: {row.get('Client Address', '')}")
+    c.drawString(120, height - 240, f"Duty Doctor: {row['Duty Doctor']}")
 
     # Itemized Table
     y = height - 270
@@ -360,17 +315,20 @@ def generate_receipt_pdf(row):
     c.drawString(450, y, f"৳ {total:.2f}")
     y -= 30
 
-    # Totals (no tax)
+    # Totals
+    tax = round(total * 0.05, 2)
+    grand_total = total + tax
+
     c.setFont("Helvetica-Bold", 10)
     c.drawString(350, y, "Subtotal:")
     c.drawString(450, y, f"৳ {total:.2f}")
     y -= 15
+    c.drawString(350, y, "Tax (5%):")
+    c.drawString(450, y, f"৳ {tax:.2f}")
+    y -= 15
     c.drawString(350, y, "Total:")
-    c.drawString(450, y, f"৳ {total:.2f}")
+    c.drawString(450, y, f"৳ {grand_total:.2f}")
     y -= 30
-
-    # Adjusted footer position
-    footer_y = 160
 
     # QR Code
     qr = qrcode.make("https://www.surokkhavetclinics.com")
@@ -378,16 +336,19 @@ def generate_receipt_pdf(row):
     qr.save(qr_buffer, format='PNG')
     qr_buffer.seek(0)
     qr_img = ImageReader(qr_buffer)
-    c.drawImage(qr_img, width - 120, footer_y, width=60, height=60)
-
-    # Duty Doctor Name (moved higher, no signature line)
-    c.setFont("Helvetica", 10)
-    c.drawString(width - 200, footer_y + 100, f"Duty Doctor: {row['Duty Doctor']}")
+    c.drawImage(qr_img, width - 120, 50, width=60, height=60)
 
     # Footer Note
     c.setFont("Helvetica-Oblique", 9)
-    c.drawString(50, footer_y + 20, "Thank you for choosing Surokkha Vet Clinics.")
-    c.drawString(50, footer_y + 5, "This receipt was generated digitally and does not require a signature.")
+    c.setFillColor(colors.black)
+    c.drawString(50, 40, "Thank you for choosing Surokkha Vet Clinics.")
+    c.drawString(50, 25, "This receipt was generated digitally and does not require a signature.")
+
+    # Duty Doctor Signature Block
+    c.setFont("Helvetica", 10)
+    c.drawString(width - 200, 80, f"Duty Doctor: {row['Duty Doctor']}")
+    c.line(width - 200, 75, width - 50, 75)
+    c.drawString(width - 200, 60, "Signature")
 
     c.showPage()
     c.save()
@@ -406,20 +367,6 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

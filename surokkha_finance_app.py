@@ -152,10 +152,6 @@ if st.session_state.role in ["Admin", "Staff"]:
                 st.success("✅ Transaction added!")
 
 
-# -------------------- Transactions Table with Multi-Select --------------------
-st.subheader("📋 Transaction Records")
-
-
 # Apply filters
 filtered_df = df.copy()
 if not filtered_df.empty:
@@ -165,23 +161,29 @@ if not filtered_df.empty:
         (filtered_df["Type"].isin(type_filter))
     ]
 
+# -------------------- Transactions Table with Multi-Select --------------------
+
+import streamlit as st
+import pandas as pd
+
+# -------------------- Safe Rerun Callback --------------------
+def safe_rerun():
+    st.session_state["trigger_rerun"] = True
+
+# -------------------- Load Data --------------------
+df = pd.read_csv("data.csv")  # Replace with your actual data source
+filtered_df = df.copy()  # Apply filters if needed
+
+# -------------------- Transactions Table --------------------
+st.subheader("📋 Transaction Records")
+
 if filtered_df.empty:
     st.info("No transactions match the current filters.")
 else:
-    # Sort and reset index for safe referencing
-    filtered_df_sorted = filtered_df.sort_values("Date", ascending=False).reset_index()
+    filtered_df_sorted = filtered_df.sort_values("Date", ascending=False)
 
-    # Multi-select dropdown
-    selected_rows = st.multiselect(
-        "Select transactions to delete:",
-        options=filtered_df_sorted.index,
-        format_func=lambda i: f"{filtered_df_sorted.loc[i, 'Date'].date()} | {filtered_df_sorted.loc[i, 'Client Name']} | ৳{filtered_df_sorted.loc[i, 'Amount']}"
-    )
-
-    # Show details for selected transactions
-    for i in selected_rows:
-        row = filtered_df_sorted.loc[i]
-        with st.expander(f"{row['Date'].date()} | {row['Client Name']} | ৳{row['Amount']}"):
+    for i, row in filtered_df_sorted.iterrows():
+        with st.expander(f"{row['Date']} | {row['Client Name']} | ৳{row['Amount']}"):
             st.write(f"**Category:** {row['Category']}")
             st.write(f"**Type:** {row['Type']}")
             st.write(f"**Payment Method:** {row['Payment Method']}")
@@ -190,25 +192,27 @@ else:
             st.write(f"**Doctor:** {row['Duty Doctor']}")
             st.write(f"**Details:** {row['Details']}")
 
-    # Delete button
-    if selected_rows and st.button("🗑️ Delete Selected Transactions"):
-        # Store deletion request in session_state
-        st.session_state["pending_deletion"] = filtered_df_sorted.loc[selected_rows, "index"].tolist()
-        st.success(f"✅ Marked {len(selected_rows)} transaction(s) for deletion.")
+            if st.button("🗑️ Delete This Transaction", key=f"delete_{i}"):
+                st.session_state["pending_deletion"] = i
+                st.success("✅ Transaction marked for deletion.")
+                safe_rerun()
 
 # -------------------- Safe Deletion Execution --------------------
 if "pending_deletion" in st.session_state:
-    indices_to_delete = st.session_state.pop("pending_deletion")
-    df.drop(index=indices_to_delete, inplace=True)
-    df.to_csv("data.csv", index=False)  # Replace with Google Sheets sync if needed
+    index_to_delete = st.session_state.pop("pending_deletion")
+    df.drop(index=index_to_delete, inplace=True)
+    df.to_csv("data.csv", index=False)
     st.rerun()
 
+# -------------------- Export Filtered Data --------------------
 st.download_button(
     label="📥 Download Filtered Data as CSV",
     data=(filtered_df.to_csv(index=False)).encode("utf-8"),
     file_name="surokkha_transactions.csv",
     mime="text/csv"
 )
+
+
 
 # -------------------- Category Manager --------------------
 if st.session_state.role == "Admin":
@@ -401,6 +405,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

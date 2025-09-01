@@ -134,6 +134,7 @@ if st.session_state.role in ["Admin", "Staff"]:
 
         with col3:
             phone = st.text_input("Phone Number")
+            client_address = st.text_input("Client Address")
             doctor = st.text_input("Duty Doctor")
             details = st.text_area("Details")
 
@@ -150,6 +151,7 @@ if st.session_state.role in ["Admin", "Staff"]:
                     "Payment Method": payment_method,
                     "Client Name": client_name,
                     "Phone Number": phone,
+                    "Client Address": client_address,
                     "Duty Doctor": doctor,
                     "Details": details
                 }])
@@ -269,7 +271,7 @@ def generate_receipt_pdf(row):
 
     # Draw letter pad background
     try:
-        letterpad = ImageReader("letterpad.png")  # Make sure this matches your GitHub filename
+        letterpad = ImageReader("letterpad.png")  # Ensure this file is in your GitHub repo
         c.drawImage(letterpad, 0, 0, width=width, height=height)
     except:
         c.setFont("Helvetica-Bold", 14)
@@ -280,16 +282,17 @@ def generate_receipt_pdf(row):
     c.setFillColor(colors.HexColor("#0B6E4F"))
     c.drawCentredString(width / 2, height - 180, "Income & Expense Receipt")
 
-    # Billed To
+    # Billed To Section
     c.setFont("Helvetica-Bold", 11)
     c.setFillColor(colors.black)
     c.drawString(50, height - 210, "Billed To:")
     c.setFont("Helvetica", 10)
     c.drawString(120, height - 210, f"{row['Client Name']} | {row['Phone Number']}")
-    c.drawString(120, height - 225, f"Duty Doctor: {row['Duty Doctor']}")
+    c.drawString(120, height - 225, f"Address: {row.get('Client Address', '')}")
+    c.drawString(120, height - 240, f"Duty Doctor: {row['Duty Doctor']}")
 
     # Itemized Table
-    y = height - 260
+    y = height - 270
     c.setFont("Helvetica-Bold", 11)
     c.drawString(50, y, "Service")
     c.drawString(250, y, "Unit Price")
@@ -335,11 +338,17 @@ def generate_receipt_pdf(row):
     qr_img = ImageReader(qr_buffer)
     c.drawImage(qr_img, width - 120, 50, width=60, height=60)
 
-    # Footer
+    # Footer Note
     c.setFont("Helvetica-Oblique", 9)
     c.setFillColor(colors.black)
     c.drawString(50, 40, "Thank you for choosing Surokkha Vet Clinics.")
     c.drawString(50, 25, "This receipt was generated digitally and does not require a signature.")
+
+    # Duty Doctor Signature Block
+    c.setFont("Helvetica", 10)
+    c.drawString(width - 200, 80, f"Duty Doctor: {row['Duty Doctor']}")
+    c.line(width - 200, 75, width - 50, 75)
+    c.drawString(width - 200, 60, "Signature")
 
     c.showPage()
     c.save()
@@ -358,6 +367,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

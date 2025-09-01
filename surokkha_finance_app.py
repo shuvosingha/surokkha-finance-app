@@ -159,7 +159,18 @@ if st.session_state.role in ["Admin", "Staff"]:
                 save_data(df)
                 st.success("✅ Transaction added!")
 
-# -------------------- Transactions Table with Multi-Select --------------------
+import streamlit as st
+import pandas as pd
+
+# -------------------- Safe Rerun Callback --------------------
+def safe_rerun():
+    st.session_state["trigger_rerun"] = True
+
+# -------------------- Load Data --------------------
+df = pd.read_csv("data.csv")  # Replace with your actual data source
+filtered_df = df.copy()  # Apply filters if needed
+
+# -------------------- Transactions Table --------------------
 st.subheader("📋 Transaction Records")
 
 if filtered_df.empty:
@@ -192,12 +203,14 @@ else:
         # Store deletion request in session_state
         st.session_state["pending_deletion"] = filtered_df_sorted.loc[selected_rows, "index"].tolist()
         st.success(f"✅ Marked {len(selected_rows)} transaction(s) for deletion.")
+        safe_rerun()
 
 # -------------------- Safe Deletion Execution --------------------
 if "pending_deletion" in st.session_state:
     indices_to_delete = st.session_state.pop("pending_deletion")
     df.drop(index=indices_to_delete, inplace=True)
     df.to_csv("data.csv", index=False)  # Replace with Google Sheets sync if needed
+    st.session_state["trigger_rerun"] = False
     st.experimental_rerun()
 
 # -------------------- Export Filtered Data --------------------
@@ -399,6 +412,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

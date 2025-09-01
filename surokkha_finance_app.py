@@ -161,10 +161,27 @@ if st.session_state.role in ["Admin", "Staff"]:
 
 # -------------------- Transactions Table --------------------
 st.subheader("📋 Transaction Records")
-st.dataframe(
-    (filtered_df.sort_values("Date", ascending=False) if not filtered_df.empty else filtered_df),
-    use_container_width=True
-)
+
+if filtered_df.empty:
+    st.info("No transactions match the current filters.")
+else:
+    filtered_df_sorted = filtered_df.sort_values("Date", ascending=False)
+
+    for i, row in filtered_df_sorted.iterrows():
+        with st.expander(f"{row['Date'].date()} | {row['Client Name']} | ৳{row['Amount']}"):
+            st.write(f"**Category:** {row['Category']}")
+            st.write(f"**Type:** {row['Type']}")
+            st.write(f"**Payment Method:** {row['Payment Method']}")
+            st.write(f"**Phone:** {row['Phone Number']}")
+            st.write(f"**Address:** {row.get('Client Address', '')}")
+            st.write(f"**Doctor:** {row['Duty Doctor']}")
+            st.write(f"**Details:** {row['Details']}")
+
+            if st.button("🗑️ Delete This Transaction", key=f"delete_{i}"):
+                df.drop(index=row.name, inplace=True)
+                save_data(df)
+                st.success("✅ Transaction deleted.")
+                st.rerun()
 
 
 # -------------------- Export --------------------
@@ -195,7 +212,7 @@ if st.session_state.role == "Admin":
                 )
                 save_categories(categories)
                 st.success(f"✅ Category '{new_cat}' added!")
-        st.dataframe(categories, use_container_width=True)
+        st.dataframe(categories, width="stretch")
 
 # -------------------- Analytics --------------------
 if st.session_state.role in ["Admin", "Staff"]:
@@ -239,7 +256,7 @@ if not graph_df.empty:
             title="Monthly Income", barmode="stack"
         ) if not inc.empty else None
         if fig_income:
-            st.plotly_chart(fig_income, use_container_width=True)
+            st.plotly_chart(fig_income, width="stretch")
         else:
             st.info("No income data to display yet.")
 
@@ -250,7 +267,7 @@ if not graph_df.empty:
             title="Monthly Expense", barmode="stack"
         ) if not exp.empty else None
         if fig_expense:
-            st.plotly_chart(fig_expense, use_container_width=True)
+            st.plotly_chart(fig_expense, width="stretch")
         else:
             st.info("No expense data to display yet.")
 else:
@@ -368,6 +385,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

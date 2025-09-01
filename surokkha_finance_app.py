@@ -267,83 +267,65 @@ def generate_receipt_pdf(row):
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
-    # Colors
-    header_color = colors.HexColor("#1A73E8")
-    accent_color = colors.HexColor("#0B6E4F")
-    line_y = height - 140
-
-    # Logo
+    # Draw letter pad background
     try:
-        logo = ImageReader("logo.png")
-        c.drawImage(logo, 30, height - 100, width=60*mm, preserveAspectRatio=True, mask='auto')
+        letterpad = ImageReader("letterpad.png")  # Make sure this matches your GitHub filename
+        c.drawImage(letterpad, 0, 0, width=width, height=height)
     except:
         c.setFont("Helvetica-Bold", 14)
-        c.setFillColor(header_color)
-        c.drawString(30, height - 80, "Surokkha Vet Clinics")
-
-    # Clinic Info
-    c.setFont("Helvetica-Bold", 16)
-    c.setFillColor(header_color)
-    c.drawString(120, height - 60, "Surokkha Vet Clinics")
-
-    c.setFont("Helvetica", 10)
-    c.setFillColor(colors.black)
-    c.drawString(120, height - 80, "📞 +880-1711 77 08 27")
-    c.drawString(120, height - 95, "✉️ surokkhavetclinic@gmail.com")
-    c.drawString(120, height - 110, "🌐 www.surokkhavetclinics.com")
-    c.drawString(120, height - 125, "📍 Mohammadia Super Market (1st Floor), Sobhanbag, Mirpur Road, Dhaka - 1207")
+        c.drawString(50, height - 50, "Surokkha Vet Clinics")
 
     # Receipt Title
     c.setFont("Helvetica-Bold", 14)
-    c.setFillColor(accent_color)
-    c.drawCentredString(width / 2, height - 160, "Income & Expense Receipt")
+    c.setFillColor(colors.HexColor("#0B6E4F"))
+    c.drawCentredString(width / 2, height - 180, "Income & Expense Receipt")
 
     # Billed To
     c.setFont("Helvetica-Bold", 11)
-    c.drawString(50, line_y, "Billed To:")
+    c.setFillColor(colors.black)
+    c.drawString(50, height - 210, "Billed To:")
     c.setFont("Helvetica", 10)
-    c.drawString(120, line_y, f"{row['Client Name']} | {row['Phone Number']}")
-    line_y -= 20
-    c.drawString(120, line_y, f"Duty Doctor: {row['Duty Doctor']}")
-    line_y -= 30
+    c.drawString(120, height - 210, f"{row['Client Name']} | {row['Phone Number']}")
+    c.drawString(120, height - 225, f"Duty Doctor: {row['Duty Doctor']}")
 
     # Itemized Table
+    y = height - 260
     c.setFont("Helvetica-Bold", 11)
-    c.drawString(50, line_y, "Service")
-    c.drawString(250, line_y, "Unit Price")
-    c.drawString(350, line_y, "Quantity")
-    c.drawString(450, line_y, "Total")
-    line_y -= 15
-    c.line(50, line_y, 550, line_y)
-    line_y -= 20
+    c.drawString(50, y, "Service")
+    c.drawString(250, y, "Unit Price")
+    c.drawString(350, y, "Quantity")
+    c.drawString(450, y, "Total")
+    y -= 15
+    c.line(50, y, 550, y)
+    y -= 20
 
-    # Single item (you can expand this to multiple later)
+    # Single item
     service = row["Category"]
     unit_price = float(row["Amount"])
     quantity = 1
     total = unit_price * quantity
 
     c.setFont("Helvetica", 10)
-    c.drawString(50, line_y, service)
-    c.drawString(250, line_y, f"৳ {unit_price:.2f}")
-    c.drawString(350, line_y, str(quantity))
-    c.drawString(450, line_y, f"৳ {total:.2f}")
-    line_y -= 30
+    c.drawString(50, y, service)
+    c.drawString(250, y, f"৳ {unit_price:.2f}")
+    c.drawString(350, y, str(quantity))
+    c.drawString(450, y, f"৳ {total:.2f}")
+    y -= 30
 
     # Totals
     tax = round(total * 0.05, 2)
     grand_total = total + tax
 
     c.setFont("Helvetica-Bold", 10)
-    c.drawString(350, line_y, "Subtotal:")
-    c.drawString(450, line_y, f"৳ {total:.2f}")
-    line_y -= 15
-    c.drawString(350, line_y, "Tax (5%):")
-    c.drawString(450, line_y, f"৳ {tax:.2f}")
-    line_y -= 15
-    c.drawString(350, line_y, "Total:")
-    c.drawString(450, line_y, f"৳ {grand_total:.2f}")
-    line_y -= 30
+    c.drawString(350, y, "Subtotal:")
+    c.drawString(450, y, f"৳ {total:.2f}")
+    y -= 15
+    c.drawString(350, y, "Tax (5%):")
+    c.drawString(450, y, f"৳ {tax:.2f}")
+    y -= 15
+    c.drawString(350, y, "Total:")
+    c.drawString(450, y, f"৳ {grand_total:.2f}")
+    y -= 30
 
     # QR Code
     qr = qrcode.make("https://www.surokkhavetclinics.com")
@@ -376,6 +358,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

@@ -263,6 +263,7 @@ from reportlab.lib.utils import ImageReader
 from reportlab.lib import colors
 import io
 import qrcode
+from datetime import datetime
 
 def generate_receipt_pdf(row):
     buffer = io.BytesIO()
@@ -278,20 +279,25 @@ def generate_receipt_pdf(row):
         c.drawString(50, height - 50, "Surokkha Vet Clinics")
 
     # Receipt Title
-    c.setFont("Helvetica-Bold", 14)
+    c.setFont("Helvetica-Bold", 16)
     c.setFillColor(colors.HexColor("#0B6E4F"))
-    c.drawCentredString(width / 2, height - 180, "Income & Expense Receipt")
+    c.drawCentredString(width / 2, height - 180, "Receipt")
 
-    # Billed To Section (without doctor name)
-    c.setFont("Helvetica-Bold", 11)
-    c.setFillColor(colors.black)
-    c.drawString(50, height - 210, "Billed To:")
+    # Current Time (upper right below title)
+    now = datetime.now().strftime("%Y-%m-%d %I:%M %p")
     c.setFont("Helvetica", 10)
-    c.drawString(120, height - 210, f"{row['Client Name']} | {row['Phone Number']}")
-    c.drawString(120, height - 225, f"Address: {row.get('Client Address', '')}")
+    c.setFillColor(colors.black)
+    c.drawRightString(width - 50, height - 195, f"Time: {now}")
+
+    # Billed To Section
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(50, height - 220, "Billed To:")
+    c.setFont("Helvetica", 10)
+    c.drawString(120, height - 220, f"{row['Client Name']} | {row['Phone Number']}")
+    c.drawString(120, height - 235, f"Address: {row.get('Client Address', '')}")
 
     # Itemized Table
-    y = height - 260
+    y = height - 270
     c.setFont("Helvetica-Bold", 11)
     c.drawString(50, y, "Service")
     c.drawString(250, y, "Unit Price")
@@ -314,19 +320,13 @@ def generate_receipt_pdf(row):
     c.drawString(450, y, f"৳ {total:.2f}")
     y -= 30
 
-    # Totals
-    tax = round(total * 0.05, 2)
-    grand_total = total + tax
-
+    # Totals (no tax)
     c.setFont("Helvetica-Bold", 10)
     c.drawString(350, y, "Subtotal:")
     c.drawString(450, y, f"৳ {total:.2f}")
     y -= 15
-    c.drawString(350, y, "Tax (5%):")
-    c.drawString(450, y, f"৳ {tax:.2f}")
-    y -= 15
     c.drawString(350, y, "Total:")
-    c.drawString(450, y, f"৳ {grand_total:.2f}")
+    c.drawString(450, y, f"৳ {total:.2f}")
     y -= 30
 
     # Adjusted footer position
@@ -340,9 +340,8 @@ def generate_receipt_pdf(row):
     qr_img = ImageReader(qr_buffer)
     c.drawImage(qr_img, width - 120, footer_y, width=60, height=60)
 
-    # Duty Doctor Signature Block (bottom right only)
+    # Duty Doctor Signature Block
     c.setFont("Helvetica", 10)
-    c.setFillColor(colors.black)
     c.drawString(width - 200, footer_y + 70, f"Duty Doctor: {row['Duty Doctor']}")
     c.line(width - 200, footer_y + 65, width - 50, footer_y + 65)
     c.drawString(width - 200, footer_y + 50, "Signature")
@@ -369,6 +368,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

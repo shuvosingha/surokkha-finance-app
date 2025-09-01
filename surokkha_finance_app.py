@@ -177,11 +177,15 @@ else:
             st.write(f"**Doctor:** {row['Duty Doctor']}")
             st.write(f"**Details:** {row['Details']}")
 
-            if st.button("🗑️ Delete This Transaction", key=f"delete_{i}"):
-                df.drop(index=row.name, inplace=True)
-                save_data(df)
-                st.success("✅ Transaction deleted.")
-                st.rerun()
+            # ✅ Only show delete button for Admins
+            if st.session_state.role == "Admin":
+                if st.button("🗑️ Delete This Transaction", key=f"delete_{i}"):
+                    df.drop(index=row.name, inplace=True)
+                    save_data(df)
+                    st.success("✅ Transaction deleted.")
+                    st.rerun()
+            else:
+                st.caption("🔒 Only Admins can delete transactions.")
 
 
 # -------------------- Export --------------------
@@ -385,6 +389,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

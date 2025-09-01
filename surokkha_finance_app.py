@@ -245,58 +245,78 @@ if st.session_state.role in ["Admin", "Staff"]:
         show_summary(period_df, label)
 
 # -------------------- Graphs --------------------
+
 st.subheader("📈 Income & Expense Graphs")
+
 graph_df = df.copy()
 graph_df["Date"] = pd.to_datetime(graph_df["Date"], errors="coerce")
-
-st.subheader("📊 Monthly Transaction Count")
-
-if not graph_df.empty:
-    graph_df["Month"] = graph_df["Date"].dt.to_period("M").astype(str)
-
-    # Count transactions per month by type
-    count_df = graph_df.groupby(["Month", "Type"]).size().reset_index(name="Count")
-
-    fig_count = px.bar(
-        count_df,
-        x="Month",
-        y="Count",
-        color="Type",
-        title="Monthly Transaction Count by Type",
-        barmode="group"
-    )
-
-    st.plotly_chart(fig_count, width="stretch")
-else:
-    st.info("No transaction data available for count visualization.")
+graph_df = graph_df.dropna(subset=["Date"])
 
 if not graph_df.empty:
-    graph_df["Month"] = graph_df["Date"].dt.to_period("M").astype(str)
+    graph_df["Year"] = graph_df["Date"].dt.year
+    graph_df["Month"] = graph_df["Date"].dt.month_name()
 
-    col1, col2 = st.columns(2)
-    with col1:
-        inc = graph_df[graph_df["Type"] == "Income"]
+    # Year filter
+    selected_year = st.selectbox("Select Year", sorted(graph_df["Year"].unique(), reverse=True))
+
+    # Month filter (optional)
+    month_options = graph_df[graph_df["Year"] == selected_year]["Month"].unique().tolist()
+    selected_month = st.selectbox("Select Month (optional)", ["All"] + sorted(month_options))
+
+    # Apply filters
+    filtered_graph_df = graph_df[graph_df["Year"] == selected_year]
+    if selected_month != "All":
+        filtered_graph_df = filtered_graph_df[filtered_graph_df["Month"] == selected_month]
+
+
+with st.container():
+    inc = filtered_graph_df[filtered_graph_df["Type"] == "Income"]
+    if not inc.empty:
         fig_income = px.bar(
-            inc, x="Month", y="Amount", color="Category",
-            title="Monthly Income", barmode="stack"
-        ) if not inc.empty else None
-        if fig_income:
-            st.plotly_chart(fig_income, width="stretch")
-        else:
-            st.info("No income data to display yet.")
+            inc,
+            x="Date",
+            y="Amount",
+            color="Category",
+            title="Income Breakdown",
+            barmode="stack"
+        )
+        st.plotly_chart(fig_income, width="stretch")
+    else:
+        st.info("No income data for selected period.")
 
-    with col2:
-        exp = graph_df[graph_df["Type"] == "Expense"]
+
+with st.container():
+    exp = filtered_graph_df[filtered_graph_df["Type"] == "Expense"]
+    if not exp.empty:
         fig_expense = px.bar(
-            exp, x="Month", y="Amount", color="Category",
-            title="Monthly Expense", barmode="stack"
-        ) if not exp.empty else None
-        if fig_expense:
-            st.plotly_chart(fig_expense, width="stretch")
-        else:
-            st.info("No expense data to display yet.")
-else:
-    st.info("No data yet. Add transactions to see analytics and charts.")
+            exp,
+            x="Date",
+            y="Amount",
+            color="Category",
+            title="Expense Breakdown",
+            barmode="stack"
+        )
+        st.plotly_chart(fig_expense, width="stretch")
+    else:
+        st.info("No expense data for selected period.")
+
+
+with st.container():
+    count_df = filtered_graph_df.groupby(["Date", "Type"]).size().reset_index(name="Count")
+    if not count_df.empty:
+        fig_count = px.bar(
+            count_df,
+            x="Date",
+            y="Count",
+            color="Type",
+            title="Transaction Count by Type",
+            barmode="group"
+        )
+        st.plotly_chart(fig_count, width="stretch")
+    else:
+        st.info("No transaction count data for selected period.")
+
+
 
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
@@ -410,6 +430,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

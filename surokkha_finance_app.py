@@ -433,6 +433,71 @@ for i, row in filtered_df.iterrows():
 
 
 
+INVENTORY_FILE = "inventory.csv"
+
+def load_inventory():
+    try:
+        df = pd.read_csv(INVENTORY_FILE)
+        return df
+    except Exception:
+        return pd.DataFrame(columns=[
+            "Category", "Product Name", "Product ID", "Units Available",
+            "Pack Size", "Purchase Cost per Pack", "Sell Price per Unit", "Revenue per Unit"
+        ])
+
+def save_inventory(df: pd.DataFrame):
+    df.to_csv(INVENTORY_FILE, index=False)
+
+
+if st.session_state.role == "Admin":
+    st.subheader("📦 Inventory Management")
+
+    inventory_df = load_inventory()
+
+    with st.form("add_inventory_item"):
+        st.markdown("### ➕ Add New Inventory Item")
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            category = st.selectbox("Category", ["Medicine", "Feed", "Litter", "Toy", "Other"])
+            product_name = st.text_input("Product Name")
+            product_id = st.text_input("Product ID")
+
+        with col2:
+            units_available = st.number_input("Total Units Available", min_value=0, step=1)
+            pack_size = st.number_input("Pack Size", min_value=1, step=1)
+            purchase_cost = st.number_input("Purchase Cost per Pack", min_value=0.0, step=0.01)
+
+        with col3:
+            sell_price = st.number_input("Sell Price per Unit", min_value=0.0, step=0.01)
+            revenue_per_unit = sell_price - (purchase_cost / pack_size)
+            st.metric("Revenue per Unit", f"৳ {revenue_per_unit:.2f}")
+
+        submitted = st.form_submit_button("Add to Inventory")
+        if submitted:
+            new_item = pd.DataFrame([{
+                "Category": category,
+                "Product Name": product_name,
+                "Product ID": product_id,
+                "Units Available": int(units_available),
+                "Pack Size": int(pack_size),
+                "Purchase Cost per Pack": float(purchase_cost),
+                "Sell Price per Unit": float(sell_price),
+                "Revenue per Unit": round(revenue_per_unit, 2)
+            }])
+            inventory_df = pd.concat([inventory_df, new_item], ignore_index=True)
+            save_inventory(inventory_df)
+            st.success("✅ Item added to inventory.")
+            st.rerun()
+
+    st.markdown("### 📋 Current Inventory")
+    if inventory_df.empty:
+        st.info("No inventory items yet.")
+    else:
+        st.dataframe(inventory_df.sort_values("Category"), width="stretch")
+
+
+
 
 
 

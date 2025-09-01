@@ -198,7 +198,7 @@ if "pending_deletion" in st.session_state:
     indices_to_delete = st.session_state.pop("pending_deletion")
     df.drop(index=indices_to_delete, inplace=True)
     df.to_csv("data.csv", index=False)  # Replace with Google Sheets sync if needed
-    st.experimental_rerun()
+    st.rerun()
 
 st.download_button(
     label="📥 Download Filtered Data as CSV",
@@ -227,7 +227,7 @@ if st.session_state.role == "Admin":
                 )
                 save_categories(categories)
                 st.success(f"✅ Category '{new_cat}' added!")
-        st.dataframe(categories, use_container_width=True)
+        st.dataframe(categories, width="stretch")
 
 # -------------------- Analytics --------------------
 if st.session_state.role in ["Admin", "Staff"]:
@@ -271,7 +271,7 @@ if not graph_df.empty:
             title="Monthly Income", barmode="stack"
         ) if not inc.empty else None
         if fig_income:
-            st.plotly_chart(fig_income, use_container_width=True)
+            st.plotly_chart(fig_income, width="stretch")
         else:
             st.info("No income data to display yet.")
 
@@ -282,7 +282,7 @@ if not graph_df.empty:
             title="Monthly Expense", barmode="stack"
         ) if not exp.empty else None
         if fig_expense:
-            st.plotly_chart(fig_expense, use_container_width=True)
+            st.plotly_chart(fig_expense, width="stretch")
         else:
             st.info("No expense data to display yet.")
 else:
@@ -398,6 +398,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

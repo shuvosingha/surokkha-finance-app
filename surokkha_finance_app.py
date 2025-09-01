@@ -249,6 +249,27 @@ st.subheader("📈 Income & Expense Graphs")
 graph_df = df.copy()
 graph_df["Date"] = pd.to_datetime(graph_df["Date"], errors="coerce")
 
+st.subheader("📊 Monthly Transaction Count")
+
+if not graph_df.empty:
+    graph_df["Month"] = graph_df["Date"].dt.to_period("M").astype(str)
+
+    # Count transactions per month by type
+    count_df = graph_df.groupby(["Month", "Type"]).size().reset_index(name="Count")
+
+    fig_count = px.bar(
+        count_df,
+        x="Month",
+        y="Count",
+        color="Type",
+        title="Monthly Transaction Count by Type",
+        barmode="group"
+    )
+
+    st.plotly_chart(fig_count, width="stretch")
+else:
+    st.info("No transaction data available for count visualization.")
+
 if not graph_df.empty:
     graph_df["Month"] = graph_df["Date"].dt.to_period("M").astype(str)
 
@@ -389,6 +410,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 

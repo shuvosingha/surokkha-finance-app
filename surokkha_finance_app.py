@@ -159,6 +159,31 @@ if st.session_state.role in ["Admin", "Staff"]:
                 save_data(df)
                 st.success("✅ Transaction added!")
 
+df = pd.read_csv("data.csv")
+filtered_df = df.copy()  # Apply filters if needed
+
+if not filtered_df.empty:
+    filtered_df_sorted = filtered_df.sort_values("Date", ascending=False).reset_index()
+    selected_rows = st.multiselect(
+        "Select transactions to delete:",
+        options=filtered_df_sorted.index,
+        format_func=lambda i: f"{filtered_df_sorted.loc[i, 'Date'].date()} | {filtered_df_sorted.loc[i, 'Client Name']} | ৳{filtered_df_sorted.loc[i, 'Amount']}"
+    )
+
+    for i in selected_rows:
+        row = filtered_df_sorted.loc[i]
+        with st.expander(f"{row['Date'].date()} | {row['Client Name']} | ৳{row['Amount']}"):
+            st.write(row.to_dict())
+
+    if selected_rows and st.button("🗑️ Delete Selected Transactions"):
+        original_indices = filtered_df_sorted.loc[selected_rows, "index"]
+        df.drop(index=original_indices, inplace=True)
+        df.to_csv("data.csv", index=False)
+        st.success(f"✅ Deleted {len(selected_rows)} transaction(s).")
+        st.rerun()
+else:
+    st.info("No transactions match the current filters.")
+
 # -------------------- Transactions Table with Multi-Select --------------------
 st.subheader("📋 Transaction Records")
 
@@ -398,6 +423,7 @@ for i, row in filtered_df.iterrows():
                 file_name=f"receipt_{row['Client Name'].replace(' ', '_')}_{row['Date'].date()}.pdf",
                 mime="application/pdf"
             )
+
 
 
 
